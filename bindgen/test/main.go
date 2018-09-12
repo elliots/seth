@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 
@@ -45,10 +44,11 @@ func main() {
 	// c := tevm.NewChain()
 	// acct := c.NewAccount(1)
 
-	url := "http://localhost:7545"
+	url := "http://localhost:8545"
 
 	c := seth.NewHTTPClient(url)
-	fundingAddress, err := seth.ParseAddress("0x84ede7C61cBFf3056D6dEb24FF774b79c1d2c4E4")
+	fundingAddress, err := seth.ParseAddress("0x5231a93db3ce6cbb709af94a267dd0e747d30f82") // gary local
+	//fundingAddress, err := seth.ParseAddress("0x84ede7C61cBFf3056D6dEb24FF774b79c1d2c4E4") // ganache
 	sender := seth.NewSender(c, fundingAddress)
 	contract := bundle.Contract("Test")
 	ccode := contract.Code
@@ -57,44 +57,48 @@ func main() {
 		//fatal("compiled and precompiled code not identical")
 	}
 
-	// addr, _ := seth.ParseAddress("0x480131399939c242cac75bb3ccadad1f697c3c47")
+	addr, _ := seth.ParseAddress("0x78bbc2d27163b8447b99005845e25bd79392fc02")
 
-	addr, err := sender.Create(TestCode, nil)
-	//addr, err := c.Create(&acct, TestCode)
-	if err != nil {
-		fatal("deploying the contract:", err)
-	}
+	// addr, err := sender.Create(TestCode, nil)
+	// //addr, err := c.Create(&acct, TestCode)
+	// if err != nil {
+	// 	fatal("deploying the contract:", err)
+	// }
 
-	log.Printf("Installed contract to: %s", addr.String())
+	// log.Printf("Installed contract to: %s", addr.String())
 
 	//sender := c.Sender(&acct)
 	//sender.Pending = true
 
-	cc := NewTest(&addr, sender)
+	cc := NewTest(addr, sender)
 
-	s := "hello"
-	b := []byte(s)
+	// s := "hello"
+	// b := []byte(s)
 
-	var b32 [32]byte
-	copy(b32[:], b[:])
+	// var b32 [32]byte
+	// copy(b32[:], b[:])
 
-	spew.Dump(cc.SetBytes32Val(b32))
+	// spew.Dump(cc.SetBytes32Val(b32))
 
-	spew.Dump(cc.Bytes32Val())
+	// spew.Dump(cc.Bytes32Val())
 
-	spew.Dump(cc.SetBytesval(b))
+	// spew.Dump(cc.SetBytesval(b))
 
-	spew.Dump(cc.Bytesval())
+	// spew.Dump(cc.Bytesval())
 
-	spew.Dump(cc.SetStringval(s))
+	// spew.Dump(cc.SetStringval(s))
 
-	spew.Dump(cc.Stringval())
+	// spew.Dump(cc.Stringval())
+
+	//	spew.Dump(cc.SetOwner(nil))
 
 	//spew.Dump(cc.AddElliot())
 
 	//time.Sleep(time.Second * 10)
 
-	//spew.Dump(cc.AllPeople())
+	spew.Dump(cc.SetOwner(nil))
+
+	spew.Dump(cc.AllPeople())
 
 	// log.Printf("installed contract to: %s", addr.String())
 

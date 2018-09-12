@@ -6,8 +6,16 @@ contract Test {
 
     string public name;
     
+    Person public owner;
 
-    
+    function setOwner(Person p) public {
+        owner = p;
+    }
+
+    function getOwnerName() public view returns(string name) {
+        return owner.name;
+    }
+
     Person[] public people;
 
     struct Person {

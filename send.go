@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // EtherType represents a type in the
@@ -103,6 +105,25 @@ func (i *IntSlice) EncodeABI(v []byte) []byte {
 // Len implements EtherSlice.Len
 func (i *IntSlice) Len() int  { return len(*i) }
 func (i *IntSlice) internal() {}
+
+// Tupleslice is an implementation of EtherSlice
+// for a list of any type
+type Tupleslice []EtherType
+
+func (t *Tupleslice) EncodeABI(v []byte) []byte {
+	for j := range *t {
+		v = (*t)[j].EncodeABI(v)
+	}
+	return v
+}
+
+// Len implements EtherSlice.Len
+func (t *Tupleslice) Len() int  { return len(*t) }
+func (t *Tupleslice) internal() {}
+
+type Tuple interface {
+	Tuple() (values []interface{}, types []string)
+}
 
 // AddrSlice is an implementation of EtherSlice
 // for a list of addresses
@@ -245,54 +266,68 @@ func outgoingArgConvert(f string, args []interface{}) (out []EtherType) {
 			panic(fmt.Sprintf("arg %d incorrect. could not convert type %s to expected type %s", i, reflect.TypeOf(v).Name(), argTypes[i]))
 		}
 
-		switch v := v.(type) {
-		case Bytes:
-			// Pass it through...
-			converted = &v
-		case string:
-			if argType == "address" {
-				var err error
-				if converted, err = ParseAddress(v); err != nil {
-					panic(fmt.Sprintf("arg %d could not be parsed as address: %s", i, err))
-				}
-			} else if argType == "string" {
-				converted = NewString(v)
-			} else {
-				panicArg()
-			}
-		case int8, int16, int32, int64, uint8, uint16, uint32, uint64:
-			if reflect.TypeOf(v).Name() != argTypes[i] {
-				panicArg()
-			}
-			n := new(Int)
-			_ = n.FromString(fmt.Sprintf("%d", v))
-			converted = n
-		case [32]byte:
-			if argType != "bytes32" {
-				panicArg()
-			}
+		if argType == "tuple" {
+			// t, ok := v.(Tuple)
+			// if !ok {
+			// 	panic(fmt.Sprintf("arg %d is not a tuple (must implement seth.Tuple)", i))
+			// }
 
-			converted = NewData(v[:])
-		case []byte:
-			if !strings.HasPrefix(argType, "bytes") {
-				panicArg()
-			}
-			if argType == "bytes" {
-				converted = NewBytes(v)
-			} else {
-				argLen, err := strconv.ParseInt(strings.TrimPrefix(argType, "bytes"), 10, 8)
-				if err != nil {
-					panic(fmt.Sprintf("arg %d failed to parse length from  bytes type %s: %s", i, argType, err))
+			//values, types := t.Tuple()
 
-				}
-				if int64(len(v)) > argLen {
-					panic(fmt.Sprintf("arg %d failed to parse length from  bytes type %s: %s", i, argType, err))
-				}
-				var d = make([]byte, argLen)
-				copy(d[:], v[:])
-				converted = NewData(d)
-			}
+			x := Tupleslice(outgoingArgConvert("(string,uint8)", []interface{}{"someone", uint8(99)}))
 
+			converted = &x
+		} else {
+
+			switch v := v.(type) {
+			case Bytes:
+				// Pass it through...
+				converted = &v
+			case string:
+				if argType == "address" {
+					var err error
+					if converted, err = ParseAddress(v); err != nil {
+						panic(fmt.Sprintf("arg %d could not be parsed as address: %s", i, err))
+					}
+				} else if argType == "string" {
+					converted = NewString(v)
+				} else {
+					panicArg()
+				}
+			case int8, int16, int32, int64, uint8, uint16, uint32, uint64:
+				if reflect.TypeOf(v).Name() != argTypes[i] {
+					panicArg()
+				}
+				n := new(Int)
+				_ = n.FromString(fmt.Sprintf("%d", v))
+				converted = n
+			case [32]byte:
+				if argType != "bytes32" {
+					panicArg()
+				}
+
+				converted = NewData(v[:])
+			case []byte:
+				if !strings.HasPrefix(argType, "bytes") {
+					panicArg()
+				}
+				if argType == "bytes" {
+					converted = NewBytes(v)
+				} else {
+					argLen, err := strconv.ParseInt(strings.TrimPrefix(argType, "bytes"), 10, 8)
+					if err != nil {
+						panic(fmt.Sprintf("arg %d failed to parse length from  bytes type %s: %s", i, argType, err))
+
+					}
+					if int64(len(v)) > argLen {
+						panic(fmt.Sprintf("arg %d failed to parse length from  bytes type %s: %s", i, argType, err))
+					}
+					var d = make([]byte, argLen)
+					copy(d[:], v[:])
+					converted = NewData(d)
+				}
+
+			}
 		}
 
 		// TODO: Do the rest
@@ -359,8 +394,9 @@ func (c *Client) RawCall(raw []byte) (tx Hash, err error) {
 
 // EstimateGas estimates the gas cost of mining this call into the blockchain.
 func (c *Client) EstimateGas(opts *CallOpts, pending bool) (gas Int, err error) {
-	// x := NewInt(128336)
-	// return *x, nil
+	//x := NewInt(128336)
+	//return *x, nil
+	//*
 	buf, _ := json.Marshal(opts)
 
 	bs := rawlatest
@@ -369,7 +405,7 @@ func (c *Client) EstimateGas(opts *CallOpts, pending bool) (gas Int, err error) 
 	}
 
 	err = c.Do("eth_estimateGas", []json.RawMessage{buf, bs}, &gas)
-	return
+	return //*/
 }
 
 // ConstCall executes an EVM call without mining a transaction into the blockchain.
@@ -449,7 +485,7 @@ func (d *ABIDecoder) UnmarshalText(v []byte) error {
 //
 func DecodeABI(v []byte, args ...interface{}) error {
 
-	//spew.Dump("DECODE ABI", v, "INTO", args)
+	spew.Dump("DECODE ABI", v, "INTO", args)
 	var spare big.Int
 	cur := v
 	offset := int64(0)
